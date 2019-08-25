@@ -8,7 +8,7 @@ Author: Adam Plaga
 */
 
 require_once('admin-download-software.php');
-require_once('admin-download-software-options.php');
+require_once('admin-download-software-upload.php');
 
 function download_software_render_form_shortcode($atts, $content)
 {
@@ -85,16 +85,16 @@ function download_software_check_serial()
             $logIP = $_SERVER['REMOTE_ADDR'];
         }
 
-        $existsLog = $wpdb->get_results("SELECT * FROM $wp_serial_log WHERE email_address = '$email' AND serial_number = '$serialNo' AND IP = '$logIP'");
+        // $existsLog = $wpdb->get_results("SELECT * FROM $wp_serial_log WHERE email_address = '$email' AND serial_number = '$serialNo' AND IP = '$logIP'");
 
-        if (!$existsLog) {
-            $wpdb->insert($wp_serial_log, array(
-                'serial_number' => $serialNo,
-                'email_address' => $email,
-                'IP' => $logIP
-            ));
-            $wpdb->query("UPDATE $wp_serial_number SET download_count = download_count + 1 WHERE serial_number = '$serialNo'");
-        }
+        // if (!$existsLog) {
+        $wpdb->insert($wp_serial_log, array(
+            'serial_number' => $serialNo,
+            'email_address' => $email,
+            'IP' => $logIP
+        ));
+        $wpdb->query("UPDATE $wp_serial_number SET download_count = download_count + 1 WHERE serial_number = '$serialNo'");
+        // }
 
         $cs_base_dir = WP_PLUGIN_URL . '/' . str_replace(basename(__FILE__), "", plugin_basename(__FILE__));
 
