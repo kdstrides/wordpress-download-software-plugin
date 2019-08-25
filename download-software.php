@@ -7,8 +7,10 @@ Version: 1.0
 Author: Adam Plaga
 */
 
+if ( !defined( 'ABSPATH' ) ) exit;
+
 require_once('admin-download-software.php');
-require_once('admin-download-software-upload.php');
+require_once('crud/crud.php');
 
 function download_software_render_form_shortcode($atts, $content)
 {

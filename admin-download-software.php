@@ -1,206 +1,88 @@
 <?php
 
-function admin_download_software_menu()
+function admin_upload_software_settings_page()
 {
-    add_menu_page(
-        'List serial numbers',
-        'Download Software',
-        'manage_options',
-        'admin-download-software-menu',
-        'admin_download_software_list_upload_serial',
-        '',
-        20
+    add_settings_section(
+        "upload_software",
+        "Upload Software",
+        null,
+        "admin_upload_software"
     );
-
-    add_submenu_page(
-        'admin-download-software-menu',
-        'Downloads log',
-        'List downloads log',
-        'manage_options',
-        'admin-download-software-serial',
-        'admin_download_software_list_dowloads_log'
+    add_settings_field(
+        "admin_upload_software_mac",
+        "Upload Mac File",
+        "admin_upload_software_file_mac_display",
+        "admin_upload_software",
+        "upload_software"
     );
+    add_settings_field(
+        "admin_upload_software_win",
+        "Upload Window File",
+        "admin_upload_software_file_win_display",
+        "admin_upload_software",
+        "upload_software"
+    );
+    register_setting("admin_upload_software", "admin_upload_software_mac", "handle_file_upload_mac");
+    register_setting("admin_upload_software", "admin_upload_software_win", "handle_file_upload_win");
 }
 
-function admin_download_software_list_upload_serial()
+function handle_file_upload_mac($option)
 {
-    global $title, $wpdb, $table_prefix;
-
-    $wp_serial_number = $table_prefix . "serial_number";
-    $wp_serial_log = $table_prefix . "serial_number_log";
-
-    if (isset($_POST['upload_submit'])) {
-        $table_name = $wpdb->prefix . 'serial_number';
-        $fext = $_FILES['file']['name'];
-        $ext = pathinfo($fext, PATHINFO_EXTENSION);
-
-        if (!empty($_FILES['file']['name'])) {
-            if ($ext == 'csv') {
-                $csvFile = fopen($_FILES['file']['tmp_name'], 'r');
-                fgetcsv($csvFile);
-                while (($line = fgetcsv($csvFile)) !== false) {
-                    $serialNumber = $line[0];
-                    $location = $line[1];
-                    $exists = $wpdb->get_results("SELECT * FROM $table_name WHERE serial_number = '$serialNumber'");
-                    if (!$exists) {
-                        $wpdb->insert($table_name, array(
-                            'serial_number' => $serialNumber,
-                            'location' => $location
-                        ));
-                    }
-                }
-                fclose($csvFile);
-                echo '<div> <h1>Data Uploaded Successfully</h1></div>';
-            } else {
-                echo '<h1>Oops! Something Went Wrong!</h1>Try again with valid CSV file.';
-            }
-        } else {
-            echo '<h1>Oops! Something Went Wrong!</h1>Error processing CSV file.';
-        }
+    if ($_FILES["admin_upload_software_mac"]["tmp_name"] && $_FILES["admin_upload_software_mac"]["tmp_name"] != "") {
+        $urls = wp_handle_upload($_FILES["admin_upload_software_mac"], array('test_form' => false));
+        $temp = $urls["url"];
+        return $temp;
     }
+    return $option;
+}
 
-    $page_num = isset($_GET['pagenum']) ? $_GET['pagenum'] : 1;
-    $limit = 10;
-    $offset = ($page_num - 1) * $limit;
-    $total = $wpdb->get_var("SELECT COUNT(`id`) FROM $wp_serial_number");
-    $num_of_pages = ceil($total / $limit);
+function handle_file_upload_win($option)
+{
+    if ($_FILES["admin_upload_software_win"]["tmp_name"] && $_FILES["admin_upload_software_win"]["tmp_name"] != "") {
+        $urls = wp_handle_upload($_FILES["admin_upload_software_win"], array('test_form' => false));
+        $temp = $urls["url"];
+        return $temp;
+    }
+    return $option;
+}
 
-    $lists = $wpdb->get_results("SELECT * FROM $wp_serial_number ORDER BY id DESC LIMIT $offset,$limit");
+function admin_upload_software_file_mac_display()
+{
     ?>
-    <style>
-        .pagination a {
-            padding: 7px 12px;
-            border: 1px solid #cecece;
-            background-color: white;
-            border-radius: 2px;
-            text-align: center;
-            text-decoration: none;
-        }
-    </style>
-    <h2><?php echo $title; ?></h2>
-    <div class="wrap card">
-        <form method="post" enctype="multipart/form-data" action="">
-            File:<input name="file" type="file" id="csvfile" accept=".csv" />
-            <input type="submit" name="upload_submit" value="Upload File">
-        </form>
-    </div>
-    <br/><br/>
-
-    <table class="widefat fixed" cellspacing="0">
-        <thead>
-            <tr>
-                <th class="manage-column column-columnname" scope="col">Serial Number</th>
-                <th class="manage-column column-columnname num" scope="col">Location</th>
-                <th class="manage-column column-columnname num" scope="col">Donwload Count</th>
-            </tr>
-        </thead>
-        <tfoot>
-            <tr>
-                <th class="manage-column column-columnname" scope="col">Serial Number</th>
-                <th class="manage-column column-columnname num" scope="col">Location</th>
-                <th class="manage-column column-columnname num" scope="col">Donwload Count</th>
-            </tr>
-        </tfoot>
-        <tbody>
-            <?php
-            if (!$lists) {
-                echo '<tr><td colspan="3">No serial number found.</td></tr>';
-            } else {
-                foreach ($lists as $key => $value) {
-                    $IP = $value->IP ? $value->IP : 'N/A';
-
-                    echo '<tr><td class="column-columnname">' . $value->serial_number . '</td><td class="column-columnname" align="center">' . $value->location . '</td><td class="column-columnname" align="center">' . $value->download_count . '</td></tr>';
-                }
-            }
-            ?>
-        </tbody>
-    </table>
-    <?php
-    $page_links = paginate_links(array(
-        'base' => add_query_arg('pagenum', '%#%'),
-        'format' => '',
-        'prev_text' => __('«', 'text-domain'),
-        'next_text' => __('»', 'text-domain'),
-        'total' => $num_of_pages,
-        'current' => $page_num,
-    ));
-
-    if ($page_links) {
-        echo '<div class="pagination-wrap"><div class="pagination" style="margin: 1em 0;">' . $page_links . '</div></div>';
-    }
+        <input type="file" required name="admin_upload_software_mac" accept=".zip,.rar,.7zip" />
+        <p>Mac link : <?php echo get_option('admin_upload_software_mac'); ?></p>
+   <?php
 }
 
-function admin_download_software_list_dowloads_log() {
-    global $title, $wpdb, $table_prefix;
-
-    $wp_serial_log = $table_prefix . "serial_number_log";
-
-    $page_num = isset($_GET['pagenum']) ? $_GET['pagenum'] : 1;
-    $limit = 10;
-    $offset = ($page_num - 1) * $limit;
-    $total = $wpdb->get_var("SELECT COUNT(`id`) FROM $wp_serial_log");
-    $num_of_pages = ceil($total / $limit);
-
-    $lists = $wpdb->get_results("SELECT * FROM $wp_serial_log ORDER BY id DESC LIMIT $offset,$limit");
+function admin_upload_software_file_win_display()
+{
     ?>
-    <style>
-        .pagination a {
-            padding: 7px 12px;
-            border: 1px solid #cecece;
-            background-color: white;
-            border-radius: 2px;
-            text-align: center;
-            text-decoration: none;
-        }
-    </style>
-    <h2><?php echo $title; ?></h2>
-    <table class="widefat fixed" cellspacing="0">
-        <thead>
-            <tr>
-                <th class="manage-column column-columnname" scope="col">Serial Number</th>
-                <th class="manage-column column-columnname" scope="col">Email address</th>
-                <th class="manage-column column-columnname" scope="col">IP</th>
-            </tr>
-        </thead>
-        <tfoot>
-            <tr>
-                <th class="manage-column column-columnname" scope="col">Serial Number</th>
-                <th class="manage-column column-columnname" scope="col">Email address</th>
-                <th class="manage-column column-columnname" scope="col">IP</th>
-            </tr>
-        </tfoot>
-        <tbody>
+        <input type="file" required name="admin_upload_software_win" accept=".zip,.rar,.7zip" />
+        <p>Window link : <?php echo get_option('admin_upload_software_win'); ?></p>
+   <?php
+}
+
+add_action("admin_init", "admin_upload_software_settings_page");
+
+function admin_upload_software_page()
+{
+    ?>
+      <div class="wrap">
+
+         <form method="post" enctype="multipart/form-data" action="options.php">
             <?php
-            if (!$lists) {
-                echo '<tr><td colspan="4">No serial number found.</td></tr>';
-            } else {
-                foreach ($lists as $key => $value) {
-                    $email_address = $value->email_address ? $value->email_address : 'N/A';
-                    $IP = $value->IP ? $value->IP : 'N/A';
-
-                    echo '<tr><td class="column-columnname">' . $value->serial_number . '</td><td class="column-columnname" align="center">' . $email_address . '</td><td class="column-columnname" align="center">' . $IP . '</td></tr>';
-                }
-            }
+                settings_fields("admin_upload_software");
+                do_settings_sections("admin_upload_software");
+                submit_button();
             ?>
-        </tbody>
-    </table>
-    <?php
-    $page_links = paginate_links(array(
-        'base' => add_query_arg('pagenum', '%#%'),
-        'format' => '',
-        'prev_text' => __('«', 'text-domain'),
-        'next_text' => __('»', 'text-domain'),
-        'total' => $num_of_pages,
-        'current' => $page_num,
-    ));
-
-    if ($page_links) {
-        echo '<div class="pagination-wrap"><div class="pagination" style="margin: 1em 0;">' . $page_links . '</div></div>';
-    }
+         </form>
+      </div>
+   <?php
 }
 
-function admin_download_software_upload_software() {
-
+function menu_item()
+{
+    add_submenu_page("options-general.php", "Upload software settings", "Upload Software", "manage_options", "admin_upload_software", "admin_upload_software_page");
 }
 
-add_action('admin_menu', 'admin_download_software_menu');
+add_action("admin_menu", "menu_item");
