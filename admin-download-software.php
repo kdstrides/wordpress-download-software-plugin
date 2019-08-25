@@ -29,14 +29,6 @@ function admin_download_software_list_upload_serial()
     $wp_serial_number = $table_prefix . "serial_number";
     $wp_serial_log = $table_prefix . "serial_number_log";
 
-    $page_num = isset($_GET['pagenum']) ? $_GET['pagenum'] : 1;
-    $limit = 10;
-    $offset = ($page_num - 1) * $limit;
-    $total = $wpdb->get_var("SELECT COUNT(`id`) FROM $wp_serial_number");
-    $num_of_pages = ceil($total / $limit);
-
-    $lists = $wpdb->get_results("SELECT * FROM $wp_serial_number ORDER BY id DESC LIMIT $offset,$limit");
-    
     if (isset($_POST['upload_submit'])) {
         $table_name = $wpdb->prefix . 'serial_number';
         $fext = $_FILES['file']['name'];
@@ -48,9 +40,13 @@ function admin_download_software_list_upload_serial()
                 fgetcsv($csvFile);
                 while (($line = fgetcsv($csvFile)) !== false) {
                     $serialNumber = $line[0];
+                    $location = $line[1];
                     $exists = $wpdb->get_results("SELECT * FROM $table_name WHERE serial_number = '$serialNumber'");
                     if (!$exists) {
-                        $wpdb->insert($table_name, array('serial_number' => $serialNumber));
+                        $wpdb->insert($table_name, array(
+                            'serial_number' => $serialNumber,
+                            'location' => $location
+                        ));
                     }
                 }
                 fclose($csvFile);
@@ -62,6 +58,14 @@ function admin_download_software_list_upload_serial()
             echo '<h1>Oops! Something Went Wrong!</h1>Error processing CSV file.';
         }
     }
+
+    $page_num = isset($_GET['pagenum']) ? $_GET['pagenum'] : 1;
+    $limit = 10;
+    $offset = ($page_num - 1) * $limit;
+    $total = $wpdb->get_var("SELECT COUNT(`id`) FROM $wp_serial_number");
+    $num_of_pages = ceil($total / $limit);
+
+    $lists = $wpdb->get_results("SELECT * FROM $wp_serial_number ORDER BY id DESC LIMIT $offset,$limit");
     ?>
     <style>
         .pagination a {
@@ -86,25 +90,26 @@ function admin_download_software_list_upload_serial()
         <thead>
             <tr>
                 <th class="manage-column column-columnname" scope="col">Serial Number</th>
+                <th class="manage-column column-columnname num" scope="col">Location</th>
                 <th class="manage-column column-columnname num" scope="col">Donwload Count</th>
             </tr>
         </thead>
         <tfoot>
             <tr>
                 <th class="manage-column column-columnname" scope="col">Serial Number</th>
+                <th class="manage-column column-columnname num" scope="col">Location</th>
                 <th class="manage-column column-columnname num" scope="col">Donwload Count</th>
             </tr>
         </tfoot>
         <tbody>
             <?php
             if (!$lists) {
-                echo '<tr><td colspan="4">No serial number found.</td></tr>';
+                echo '<tr><td colspan="3">No serial number found.</td></tr>';
             } else {
                 foreach ($lists as $key => $value) {
-                    $email_address = $value->email_address ? $value->email_address : 'N/A';
                     $IP = $value->IP ? $value->IP : 'N/A';
 
-                    echo '<tr><td class="column-columnname">' . $value->serial_number . '</td><td class="column-columnname" align="center">' . $value->download_count . '</td></tr>';
+                    echo '<tr><td class="column-columnname">' . $value->serial_number . '</td><td class="column-columnname" align="center">' . $value->location . '</td><td class="column-columnname" align="center">' . $value->download_count . '</td></tr>';
                 }
             }
             ?>

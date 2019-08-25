@@ -131,6 +131,7 @@ function download_software_database_table()
         $sqlSerialNumber[0] .= "  `id`  int(10) UNSIGNED NOT NULL auto_increment, ";
         $sqlSerialNumber[0] .= "  `serial_number`  VARCHAR(128)   NOT NULL, ";
         $sqlSerialNumber[0] .= "  `download_count` int(10) UNSIGNED NOT NULL, ";
+        $sqlSerialNumber[0] .= "  `location` VARCHAR(10) NOT NULL, ";
         $sqlSerialNumber[0] .= "  PRIMARY KEY `id` (`id`) ";
         $sqlSerialNumber[0] .= ") ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ; ";
     }
